@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Default (Dark) */
+    --background: #09090b;       /* Zinc 950 */
+    --foreground: #fafafa;       /* Zinc 50 */
+    --secondary-background: #18181b; /* Zinc 900 */
+    --accent: #3b82f6;          /* Blue 500 */
+    --accent-foreground: #ffffff;
+  }
+
+  .theme-light {
+    --background: #ffffff;
+    --foreground: #09090b;
+    --secondary-background: #f4f4f5; /* Zinc 100 */
+    --accent: #2563eb;          /* Blue 600 */
+    --accent-foreground: #ffffff;
+  }
+
+  .theme-blue {
+     --background: #000c18; /* Deep Blue, like VSCode default */
+     --foreground: #cccccc;
+     --secondary-background: #002140; /* Slightly lighter blue */
+     --accent: #007fd4;     /* VSCode Blue */
+     --accent-foreground: #ffffff;
+     border-color: #2b2b2b;
+  }
+}
+
+body {
+  @apply antialiased select-none overflow-hidden h-screen w-screen bg-background text-foreground;
+  /* Apply RTL direction automatically by browser if dir="rtl" is set on html */
+}
+
+/* Custom scrollbars for "premium" feel */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-zinc-700/50 rounded-full border-[3px] border-transparent bg-clip-content hover:bg-zinc-600/80;
+}

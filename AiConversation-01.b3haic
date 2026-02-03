@@ -1,0 +1,47 @@
+# AI Handover Documentation (AiConversation-01.b3haic)
+
+## 📌 Context for the Next AI Agent
+This project, **B3hPicTool**, is an Electron + React + Vite application for image processing (Upscaling, Remove BG, etc.). 
+We have just completed a major refactoring of the UI architecture to mimic a **VSCode-like Symmetric Layout**.
+
+## 🚀 Achievements in Session 01
+1. **5-Column Symmetric Layout**:
+   - **Left Activity Bar**: Toggles for Files, Settings.
+   - **Left Panel**: Shows File List (Workspace). Resizable (conceptually, currently fixed width).
+   - **Main Content**: Tabbed interface (Tabs + Canvas/Preview).
+   - **Right Panel**: Feature Settings (e.g., Upscale controls).
+   - **Right Activity Bar**: Toggles for Features (Upscale, RemoveBG).
+
+2. **Global State Management (Zustand)**:
+   - `activeLeftActivity` / `activeRightActivity`: Controls panel visibility.
+   - `files`: Array of loaded images.
+   - `tabs`: Array of open tabs (can be `preview` or `upscale` types).
+   - `activeTabId`: Currently managed tab.
+
+3. **Drag & Drop Logic**:
+   - **Global Drop Disabled**: We removed the global window listener to prevent accidental drops.
+   - **Restricted Drop**: Drops are ONEY accepted in:
+     - The **DropZone** (center empty state).
+     - The **LeftPanel** (Files list).
+   - **Self-Drag Fix**: All internal `<img>` tags have `draggable={false}` to prevent "self-dropping" bugs.
+
+4. **UI Refinements**:
+   - Margins (`mx-1`) added to Main Content for visual separation.
+   - Borders darkened/lightened for better visibility.
+   - "Workspace (N)" text removed from file list for cleanliness.
+   - Status Bar restored at the bottom.
+
+## ⚠️ Known Issues / Next Steps for You
+- **Feature Connectivity**: The Right Sidebar buttons (Upscale, RemoveBG) open the panel, but the connection to the *active tab* needs refinement. Currently, double-clicking a file opens a `preview` tab. We need to ensure that clicking a feature in the Right Bar either converts the current tab or opens a new one for that feature.
+- **Settings Window**: The IPC bridge is set up, but the Settings Window content is minimal/empty.
+- **Image Processing**: The "Upscale" button currently uses a `setTimeout` mock. Real Python/Binary integration is needed.
+
+## 📂 Key Files
+- `src/renderer/components/Layout.tsx`: The 5-column grid.
+- `src/renderer/store.ts`: The central brain (State).
+- `src/renderer/components/LeftPanel.tsx` & `RightPanel.tsx`: The sidebars.
+- `src/renderer/components/LeftActivityBar.tsx` & `RightActivityBar.tsx`: The icon bars.
+
+--- 
+**End of Session 01**
+*Ready for the next phase of implementation.*

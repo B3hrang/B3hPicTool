@@ -1,0 +1,45 @@
+{
+  "name": "b3hpictool",
+  "version": "0.1.0",
+  "main": "dist/main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k \"bun run dev:renderer\" \"bun run dev:main:build\" \"bun run dev:main:start\"",
+    "dev:renderer": "vite",
+    "dev:main:build": "bun build src/main/main.ts --outfile dist/main.js --target node --external electron --watch",
+    "dev:main:start": "bun run electron .",
+    "build": "bun run build:renderer && bun run build:main",
+    "build:renderer": "vite build",
+    "build:main": "bun build src/main/main.ts --outfile dist/main.js --target node --external electron",
+    "start": "bun run electron ."
+  },
+  "dependencies": {
+    "clsx": "^2.1.0",
+    "electron-store": "^8.2.0",
+    "framer-motion": "^11.0.3",
+    "i18next": "^23.8.2",
+    "lucide-react": "^0.323.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-dropzone": "^14.4.0",
+    "react-i18next": "^14.0.5",
+    "react-router-dom": "^7.13.0",
+    "tailwind-merge": "^2.2.1",
+    "zustand": "^5.0.11"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.16",
+    "@types/react": "^18.2.55",
+    "@types/react-dom": "^18.2.19",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.17",
+    "concurrently": "^8.2.2",
+    "electron": "^28.2.1",
+    "electron-builder": "^24.9.1",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.1.0",
+    "wait-on": "^9.0.3"
+  }
+}
