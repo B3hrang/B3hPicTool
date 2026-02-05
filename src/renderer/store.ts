@@ -1,8 +1,14 @@
 import { create } from 'zustand';
 
 type Theme = 'dark' | 'light' | 'blue';
-type Activity = 'upscale' | 'settings' | 'files';
 
+
+export interface LogEntry {
+  id: string;
+  message: string;
+  type: 'info' | 'success' | 'error' | 'warning';
+  timestamp: string;
+}
 
 export interface ImageFile {
   id: string;
@@ -12,6 +18,7 @@ export interface ImageFile {
   status: 'idle' | 'processing' | 'done' | 'error';
   originalSize?: number;
   processedPreview?: string;
+  progress?: number;
 }
 
 
@@ -62,7 +69,28 @@ interface AppState {
   closeTab: (tabId: string) => void;
   setActiveTab: (tabId: string) => void;
   
-  updateFileStatus: (id: string, status: ImageFile['status'], processedPreview?: string) => void;
+  // Upscale State
+  upscaleModel: string;
+  scaleFactor: number;
+  upscaleVariant: string;
+  upscaleGpuId: string;
+  gpus: { id: string, name: string }[];
+  setUpscaleSettings: (model: string, factor: number) => void;
+  setUpscaleVariant: (variant: string) => void;
+  setGpuId: (id: string) => void;
+  setGpus: (gpus: { id: string, name: string }[]) => void;
+
+  // Terminal & Logs
+  isTerminalOpen: boolean;
+  logs: LogEntry[];
+  addLog: (message: string, type?: LogEntry['type']) => void;
+  toggleTerminal: () => void;
+  setTerminalOpen: (isOpen: boolean) => void;
+  
+  isSettingsOpen: boolean;
+  toggleSettings: () => void;
+
+  updateFileStatus: (id: string, status: ImageFile['status'], processedPreview?: string, progress?: number) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -77,9 +105,54 @@ export const useAppStore = create<AppState>((set, get) => ({
   files: [],
   tabs: [],
   activeTabId: null,
+  
+  gpus: [],
+
+  // Upscale Defaults
+  upscaleModel: 'RealESRGAN-x4',
+  scaleFactor: 4,
+  upscaleVariant: 'realesrgan-x4plus', // Default
+  upscaleGpuId: '', // Default auto
+  
+  logs: [],
+  isTerminalOpen: false,
+  isSettingsOpen: false,
 
   setTheme: (theme) => set({ theme }),
+  toggleSettings: () => set((state) => ({ isSettingsOpen: !state.isSettingsOpen })),
   
+  setUpscaleSettings: (upscaleModel, scaleFactor) => set({ upscaleModel, scaleFactor }),
+  setUpscaleVariant: (variant) => set({ upscaleVariant: variant }),
+  setGpuId: (id: string) => {
+      set({ upscaleGpuId: id });
+      // Persist setting
+      window.electron.ipcRenderer.invoke('set-setting', 'upscaleGpuId', id);
+  },
+  setGpus: (gpus) => set({ gpus }),
+
+  addLog: (message, type = 'info') => set((state) => {
+      const now = new Date();
+      // Format: [HH:MM:SS MM-DD-YYYY] > Message
+      // Manually formatting to ensure MM-DD-YYYY
+      const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
+      const dateStr = now.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-');
+      
+      const formattedMessage = `[${timeStr} ${dateStr}] > ${message}`;
+      
+      return {
+        logs: [...state.logs, {
+            id: crypto.randomUUID(),
+            message: formattedMessage,
+            type,
+            timestamp: `${timeStr} ${dateStr}`
+        }],
+        isTerminalOpen: type === 'error' ? true : state.isTerminalOpen
+      };
+  }),
+
+  toggleTerminal: () => set((state) => ({ isTerminalOpen: !state.isTerminalOpen })),
+  setTerminalOpen: (isOpen) => set({ isTerminalOpen: isOpen }),
+
   // Logic: If clicking same activity, toggle sidebar. If different, switch and ensure open.
   setLeftActivity: (activity) => set((state) => ({ 
       activeLeftActivity: activity,
@@ -94,9 +167,32 @@ export const useAppStore = create<AppState>((set, get) => ({
   toggleLeftSidebar: () => set((state) => ({ leftSidebarOpen: !state.leftSidebarOpen })),
   toggleRightSidebar: () => set((state) => ({ rightSidebarOpen: !state.rightSidebarOpen })),
 
-  addFiles: (newFiles) => set((state) => ({ 
-      files: [...state.files, ...newFiles] 
-  })),
+  addFiles: (newFiles) => {
+      const state = get();
+      const currentFiles = state.files;
+      const validFiles: ImageFile[] = [];
+
+      newFiles.forEach(file => {
+          // Check for duplicates (Normalize path to handle inconsistencies)
+          const normalizedPath = file.path.toLowerCase().replace(/\\/g, '/');
+          const exists = currentFiles.some(f => 
+             f.path.toLowerCase().replace(/\\/g, '/') === normalizedPath
+          );
+          
+          if (exists) {
+              // Duplicate found
+          } else {
+              validFiles.push(file);
+              state.addLog(`File ${file.name} has been added.`, 'info');
+          }
+      });
+
+      if (validFiles.length > 0) {
+          set((state) => ({ 
+            files: [...state.files, ...validFiles] 
+          }));
+      }
+  },
 
   removeFile: (id) => set((state) => {
       const remainingTabs = state.tabs.filter(t => t.fileId !== id);
@@ -109,16 +205,22 @@ export const useAppStore = create<AppState>((set, get) => ({
       };
   }),
 
+
+
   // Tab Logic
   openTab: (fileId, type) => set((state) => {
     const file = state.files.find(f => f.id === fileId);
     if (!file) return {};
 
+    // Check if tab exists
     const existingTab = state.tabs.find(t => t.fileId === fileId && t.type === type);
+    
     if (existingTab) {
+        // Jump to existing
         return { activeTabId: existingTab.id };
     }
 
+    // Create New Tab (Don't close others)
     const newTab: EditorTab = {
         id: crypto.randomUUID(),
         fileId,
@@ -145,7 +247,16 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setActiveTab: (tabId) => set({ activeTabId: tabId }),
 
-  updateFileStatus: (id, status, processedPreview) => set((state) => ({
-    files: state.files.map(f => f.id === id ? { ...f, status, processedPreview } : f)
+  updateFileStatus: (id, status, processedPreview, progress) => set((state) => ({
+    files: state.files.map(f => {
+        if (f.id !== id) return f;
+        return { 
+            ...f, 
+            status, 
+            processedPreview: processedPreview ?? f.processedPreview,
+            // If progress is provided, update it. If not, keep existing unless status changed to 'idle'
+            progress: progress !== undefined ? progress : (status === 'idle' ? 0 : f.progress) 
+        };
+    })
   })),
 }));

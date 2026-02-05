@@ -12,7 +12,7 @@ export const DropZone: React.FC = () => {
      Restored local DropZone functionality as per user request.
      Global listener is removed, so this must handle drops.
   */
-  
+
   const onDrop = React.useCallback((acceptedFiles: File[]) => {
     const newFiles = acceptedFiles.map(file => ({
       id: crypto.randomUUID(),
@@ -25,18 +25,19 @@ export const DropZone: React.FC = () => {
     addFiles(newFiles);
   }, [addFiles]);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
       'image/*': ['.png', '.jpg', '.jpeg', '.webp', '.svg']
     },
+    multiple: false,
     noClick: false,
     noKeyboard: false
   });
 
   return (
-    <div 
-      {...getRootProps()} 
+    <div
+      {...getRootProps()}
       className={`
         w-full h-full flex flex-col items-center justify-center 
         border-2 border-dashed rounded-xl transition-all duration-200 cursor-pointer

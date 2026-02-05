@@ -1,0 +1,55 @@
+# AI Handover Documentation (AiConversation-02.b3haic)
+
+## 📌 Context
+Building the standalone Windows executable (`.exe`) for **B3hPicTool**. 
+The goal was to move from development mode (`bun run dev`) to a distributable production artifact.
+
+## 🚀 Achievements in Session 02
+1. **Successful Build & Packaging**:
+   - Produced a working portable executable at `release-packager/B3hPicTool-win32-x64/B3hPicTool.exe`.
+   - Verified that the application launches, loads UI, and functions correctly.
+
+2. **Critical Bug Fix (Path Resolution)**:
+   - Fixed the "Dark Screen" / "White Screen of Death" issue in production.
+   - Root cause: `bun build` hardcoded the development machine's `__dirname` into the bundle.
+   - Solution: Refactored `src/main/main.ts` to use `app.getAppPath()` for dynamic path resolution.
+
+## ⚠️ Challenges & Tricks (Must Read for Next Agent)
+
+### 1. `electron-builder` vs `7za` Failure
+We initially tried using the standard `electron-builder`. It repeatedly failed with:
+`ERROR: Cannot create symbolic link : A required privilege is not held by the client.`
+This was caused by the `7zip-bin` dependency trying to extract signing tools (`winCodeSign`) in a restricted environment or file system (likely permissions or antivirus interfering).
+
+**Trick/Workaround:**
+- We abandoned `electron-builder` for this session.
+- Switched to **`electron-packager`**, which is simpler and does not require the heavy signing toolchain download.
+- Command used: `bun x electron-packager . B3hPicTool --platform=win32 --arch=x64 --out=release-packager --overwrite`
+
+### 2. The "Dark Screen" Issue (Path Resolution)
+After packaging, the app opened to a blank/dark screen.
+- **Diagnosis**: We enabled DevTools in production (`win.webContents.openDevTools()`) and saw `ERR_FILE_NOT_FOUND`.
+- **Debugging**: We injected a `dialog.showMessageBox` to print the path `main.ts` was trying to load.
+- **Finding**: It printed `E:\B3hrang\...\src\main\index.html` even when running from the `release` folder.
+- **Why**: The bundler (`bun` or `esbuild`) treats `__dirname` as a build-time constant, freezing the source path into the output.
+
+**The Fix (Important Pattern):**
+Do NOT use `__dirname` or relative paths like `../dist` in the main process when using this build setup.
+ALWAYS use `app.getAppPath()` which resolves to `.../resources/app.asar` (or `app` folder) at runtime.
+
+```typescript
+// ❌ BAD (Hardcoded by bundler)
+const indexPath = join(__dirname, '../dist/index.html');
+
+// ✅ GOOD (Dynamic at runtime)
+const indexPath = join(app.getAppPath(), 'dist/index.html');
+```
+
+## 📂 Key Files Modified
+- `src/main/main.ts`: Updated window creation logic and path resolution.
+- `package.json`: Added/Verified build scripts.
+- `vite.config.ts`: Verified output directory settings.
+
+--- 
+**End of Session 02**
+*Executable is built and ready for distribution.*

@@ -4,14 +4,17 @@
   "main": "dist/main.js",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k \"bun run dev:renderer\" \"bun run dev:main:build\" \"bun run dev:main:start\"",
+    "dev": "bun run dev:preload:build && concurrently -k \"bun run dev:renderer\" \"bun run dev:main:build\" \"bun run dev:main:start\"",
     "dev:renderer": "vite",
     "dev:main:build": "bun build src/main/main.ts --outfile dist/main.js --target node --external electron --watch",
+    "dev:preload:build": "bun scripts/build-preload.ts",
     "dev:main:start": "bun run electron .",
-    "build": "bun run build:renderer && bun run build:main",
+    "build": "bun run build:renderer && bun run build:main && bun run build:preload",
     "build:renderer": "vite build",
     "build:main": "bun build src/main/main.ts --outfile dist/main.js --target node --external electron",
-    "start": "bun run electron ."
+    "build:preload": "bun scripts/build-preload.ts",
+    "start": "bun run electron .",
+    "dist": "bun run build && electron-builder"
   },
   "dependencies": {
     "clsx": "^2.1.0",
@@ -41,5 +44,27 @@
     "typescript": "^5.3.3",
     "vite": "^5.1.0",
     "wait-on": "^9.0.3"
+  },
+  "build": {
+    "appId": "com.b3hpictool.app",
+    "productName": "B3hPicTool",
+    "directories": {
+      "output": "release/v0.1"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      "resources/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "forceCodeSigning": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }

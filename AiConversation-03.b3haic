@@ -1,0 +1,94 @@
+# AI Handover Documentation (AiConversation-03.b3haic)
+# Session 03: The Stabilization & Feature Expansion Update
+
+## 📖 Executive Summary
+This session ("Session 03") was a massive undertaking to transform **B3hPicTool** from a fragile prototype into a robust, safe, and feature-rich production application. We started with a build that wouldn't run (Dark Screen) and ended with a fully functional executable featuring multi-tab support, GPU acceleration selection, safe file handling, and a polished UI.
+
+---
+
+## 🏗️ 1. The "Dark Screen" Crisis & Build Logic
+**Starting Point**: The app compiled but opened to a blank black screen in production.
+-   **Investigation**: We discovered that `bun build` / `esbuild` was hardcoding `__dirname` at build time. This meant the production executable was looking for files in the *development* source folder, which didn't exist on other machines or even in the release folder.
+-   **The Fix**:
+    -   Refactored `src/main/main.ts` to strictly use `app.getAppPath()` for all file resolution.
+    -   This ensures dynamic path resolution at runtime, pointing correctly to the `resources/app.asar` (or unpacked folder).
+    -   Verified by adding a `dialog.showMessageBox` during boot to trace the load path.
+
+---
+
+## 💾 2. The Save System Overhaul (Safety First)
+**Problem**: The "Save" button was ambiguous and dangerous. It would silently overwrite files or fail simply.
+**Evolution**:
+1.  **Split Strategy**: We separated functionality into two distinct actions.
+    -   **Direct Save (`Save`)**: Intended for quick saving to the source directory.
+    -   **Save As (`Save As...`)**: Standard system dialog for choosing destination.
+2.  **Implementation**:
+    -   Added `save-file-direct` IPC handler in `main.ts`.
+    -   **Safety Lock**: Before copying, the main process now performs an `fs.access` check.
+    -   If the file exists, it returns `code: 'EXISTS'`.
+    -   **UI Feedback**: The frontend receives this code and shows a **Warning Log** ("File exists...") instead of crashing or overwriting.
+3.  **Styling**: The buttons were resized and colored (Green for verify/direct, Blue for dialog) to prevent misclicks.
+
+---
+
+## ⚙️ 3. GPU selection & Engine Logic
+**Goal**: The user needed to offload work from their primary GPU (GTX 1650) to the iGPU (UHD 630), or vice versa.
+**Challenge**: `realesrgan-ncnn-vulkan` behaves differently depending on arguments.
+**Solution**:
+1.  **Backend Detection (`get-gpu-list`)**:
+    -   We created a spawner that runs the binary with `-v`.
+    -   We parse the `stderr` output to find lines like `[0] NVIDIA...` or `[1] Intel...`.
+    -   This list is sent to the frontend.
+2.  **Frontend Relocation**:
+    -   Initially placed in the `SettingsModal` (hidden).
+    -   **User Feedback**: "Move it to the main UI!"
+    -   **Final Home**: Moved to `RightPanel.tsx` under the "Upscale Settings" block.
+    -   It auto-fetches the GPU list on first click if empty.
+3.  **Model Variants**:
+    -   Added a dropdown to toggle between `realesrgan-x4plus` (Photo) and `realesrgan-x4plus-anime` (Anime).
+    -   This is dynamically injected into the args based on user selection.
+
+---
+
+## 📑 4. Tab & Interaction Management
+**Problem**: The app felt static. Files were lists, but clicking them was inconsistent, and we were limited to one view.
+**Refinement**:
+1.  **Multi-Tab Logic**:
+    -   Modified `store.ts` to allow multiple tabs in the `tabs` array.
+    -   **Smart Jump**: If you try to open a file that is *already open*, the app switches to that tab instead of duplicating it.
+2.  **Interaction Policy**:
+    -   **Click**: Selects/Highlights (Visual only).
+    -   **Double-Click**: Opens the **Preview Tab**.
+3.  **Zoom/Pan Fixes**:
+    -   The preview tabs were static images.
+    -   We refactored the image viewer into a dedicated `<PanZoomImageViewer />` component.
+    -   This isolated the `zoom` and `pan` state, ensuring that switching tabs doesn't reset or break the zoom level of other tabs.
+
+---
+
+## 🐛 5. Technical Debt & Bug Squashing
+1.  **Duplicate Log Entries**:
+    -   **Symptom**: Every time the user upscaled, logs would appear 2x, then 3x, then 4x.
+    -   **Cause**: `ipcRenderer.on` listeners were being added in `useEffect` but never properly removed, or removed with a different function reference.
+    -   **Fix**: Implemented `removeAllListeners` in `preload.ts` and called it in the cleanup phase of `Layout.tsx`.
+2.  **Duplicate Files**:
+    -   **Symptom**: Adding "image.jpg" and then "Image.jpg" resulted in two entries.
+    -   **Fix**: Added path normalization (lowercasing, slash correction) in `store.addFiles` to strictly prevent duplicates.
+3.  **Typescript Fixes**: 
+    -   Cleaned up `store.ts` interface definitions to match the actual state objects.
+
+---
+
+## 🚧 6. Current Status & Next Steps
+-   **Production Build**: **HEALTHY**. `bun run build` produces a working app in `dist/` and `release-packager/`.
+-   **Dev Environment**: **BROKEN**. `bun run dev` fails with exit code 1. This is likely a configuration issue in `vite.config.ts` or the concurrently script, but it does NOT affect the final build.
+-   **Immediate Next Step**: If further development is needed, fixing the `dev` script is the priority. If only deployment is needed, the current state is perfect.
+
+## 📂 Critical File Manifest
+-   `src/main/main.ts`: The brain. Handles IPC, File I/O, Spawning Binaries.
+-   `src/renderer/store.ts`: The state. Holds File lists, GPU list, Settings.
+-   `src/renderer/components/RightPanel.tsx`: The control center. GPU/Model selection.
+-   `src/renderer/components/ImageEditor.tsx`: The canvas. Zoom/Pan/Save logic.
+-   `src/renderer/components/Sidebar.tsx`: The library. File list & Variant selection.
+
+This document represents the cumulative effort of Session 03.
