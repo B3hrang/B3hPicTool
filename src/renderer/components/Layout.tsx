@@ -3,10 +3,10 @@ import { useAppStore } from '../store';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 
-import { LeftActivityBar } from './LeftActivityBar';
-import { RightActivityBar } from './RightActivityBar';
-import { LeftPanel } from './LeftPanel';
-import { RightPanel } from './RightPanel';
+import { ToolsActivityBar } from './ToolsActivityBar';
+import { FilesActivityBar } from './FilesActivityBar';
+import { ToolsPanel } from './ToolsPanel';
+import { FilesPanel } from './FilesPanel';
 import { TabBar } from './TabBar';
 import { StatusBar } from './StatusBar';
 import { Terminal } from './Terminal';
@@ -14,7 +14,7 @@ import { SettingsModal } from './SettingsModal';
 
 // Removed Layout logic change for now, going to modify Terminal.tsx directly to handle resize.
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { theme, leftSidebarOpen, rightSidebarOpen, addFiles, updateFileStatus, addLog } = useAppStore();
+  const { theme, isFilesPanelOpen, isToolsPanelOpen, addFiles, updateFileStatus, addLog } = useAppStore();
   const { i18n } = useTranslation();
 
   useEffect(() => {
@@ -78,11 +78,11 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     )}>
       {/* Top/Main Area */}
       <div className="flex-1 flex overflow-hidden">
-        {/* 1. Left Activity Bar */}
-        <LeftActivityBar />
+        {/* 1. Left: Tools Activity Bar */}
+        <ToolsActivityBar />
 
-        {/* 2. Left Panel (Files) */}
-        {leftSidebarOpen && <LeftPanel />}
+        {/* 2. Left: Tools Panel */}
+        {isToolsPanelOpen && <ToolsPanel />}
 
         {/* 3. Main Content Area */}
         <div className="flex-1 flex flex-col border-zinc-700 border-r border-l min-w-0 bg-background/50 isolate z-0 relative mx-1">
@@ -93,13 +93,15 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           <Terminal />
         </div>
 
-        {/* 4. Right Panel (Features) */}
-        {rightSidebarOpen && <RightPanel />}
+        {/* 4. Right: Files Panel */}
+        {isFilesPanelOpen && <FilesPanel />}
 
-        {/* 5. Right Activity Bar */}
-        <RightActivityBar />
+        {/* 5. Right: Files Activity Bar */}
+        <FilesActivityBar />
       </div>
 
+
+      <SettingsModal />
 
       {/* Bottom Status Bar */}
       <StatusBar />

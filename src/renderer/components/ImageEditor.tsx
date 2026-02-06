@@ -117,7 +117,7 @@ export const ImageEditor: React.FC = () => {
 
           {file.status === 'done' && (
             <div className="flex items-center gap-2">
-              {/* Save Direct */}
+              {/* Save Direct - Primary Action */}
               <button
                 onClick={async () => {
                   if (!file.processedPreview) return;
@@ -133,19 +133,19 @@ export const ImageEditor: React.FC = () => {
                     addLog(`Save failed: ${result.error}`, 'error');
                   }
                 }}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded font-medium text-sm transition-all shadow-lg shadow-green-500/20 whitespace-nowrap min-w-[80px] justify-center"
+                className="flex items-center gap-2 bg-accent hover:bg-accent/90 text-white px-4 py-2 rounded-md font-medium text-xs transition-all shadow-lg shadow-accent/20 whitespace-nowrap"
                 title="Save to original folder"
               >
-                <Download size={16} /> Save
+                <Download size={14} /> Save
               </button>
 
-              {/* Save As */}
+              {/* Save As - Secondary Action */}
               <button
                 onClick={handleSave}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded font-medium text-sm transition-all shadow-lg shadow-blue-500/20 whitespace-nowrap min-w-[120px] justify-center"
+                className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-md font-medium text-xs transition-all border border-zinc-700 whitespace-nowrap"
                 title="Save as..."
               >
-                <Download size={16} /> Save As...
+                <Download size={14} /> Save As...
               </button>
             </div>
           )}

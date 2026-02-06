@@ -1,0 +1,43 @@
+// File: .antigravity/settings.json
+// Version: 1.1.0 (Optimized for Antigravity v1.16.5)
+// Author: Assistant (Based on User Requirements)
+
+{
+  // --- بخش کنترل ترمینال (Universal Terminal) ---
+  "antigravity.terminal": {
+    // دستورات ایجنت را به جای Background در ترمینال تعاملی اجرا می‌کند
+    "executionMode": "interactive",
+    
+    // اگر ایجنت دستوری اجرا کرد، پنل ترمینال به صورت خودکار باز می‌شود
+    "focusOnOutput": true,
+    
+    // حفظ تاریخچه دستورات حتی پس از اتمام کار ایجنت (برای دیباگ کردن)
+    "persistSession": true
+  },
+
+  // --- بخش مجوزها و خودمختاری (Agent Autonomy) ---
+  "antigravity.permissions": {
+    // دستورات امن (لیست خواندن، بیلد گرفتن) بدون پرسش اجرا می‌شوند
+    // منطق: کاهش Context Switching برای حفظ تمرکز شما
+    "defaultStrategy": "allow_safe",
+    
+    // دستورات خطرناک (حذف فایل، push به گیت) نیاز به تایید دارند
+    "requireApproval": [
+      "rm -rf",
+      "git push",
+      "publish"
+    ]
+  },
+
+  // --- بخش انتقال وظایف (Task Transfer) ---
+  "antigravity.collaboration": {
+    // ایجنت‌ها به صورت پیش‌فرض به Artifactهای ایجنت‌های قبلی دسترسی دارند
+    "shareContext": true,
+    
+    // مسیر پیش‌فرض برای ذخیره فایل‌های Handoff (که در مرحله قبل ساختیم)
+    "memoryPath": "./.agent/memory",
+    
+    // فرمت خروجی لاگ‌ها برای خوانایی بیشتر توسط انسان و ماشین
+    "logFormat": "markdown"
+  }
+}
